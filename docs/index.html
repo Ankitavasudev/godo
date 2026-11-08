@@ -3,194 +3,369 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>go-task-cli board</title>
+<title>go-task-cli — live task board</title>
+<meta name="description" content="A working demo of go-task-cli: a project-aware todo board in your browser. Drag cards between columns, filter, search and edit — backed by localStorage, the same data model the CLI manages.">
 <style>
-:root{--bg:#0b1020;--panel:#141a2e;--card:#1b2340;--text:#e7ecf7;--muted:#8fa0c0;--line:#28324f;--low:#3fb950;--medium:#d29922;--high:#f0883e;--critical:#f85149;--accent:#58a6ff}
+:root{--bg:#0b1020;--panel:#141a2e;--card:#1b2340;--text:#e7ecf7;--muted:#8fa0c0;--line:#28324f;--low:#3fb950;--medium:#d29922;--high:#f0883e;--critical:#f85149;--accent:#58a6ff;--accent-dim:rgba(88,166,255,.12)}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-main{max-width:1280px;margin:0 auto;padding:36px 20px 64px}
-h1{font-size:24px;margin:0 0 4px}
-.sub{color:var(--muted);font-size:13px;margin-bottom:26px}
+body{margin:0;background:radial-gradient(800px 480px at 15% -10%,rgba(88,166,255,.14),transparent 60%),radial-gradient(700px 450px at 90% 0%,rgba(63,185,80,.08),transparent 55%),var(--bg);color:var(--text);font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1280px;margin:0 auto;padding:26px 20px 56px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+h1{font-size:22px;margin:0}
+h1 code{color:var(--accent);font-size:.82em}
+.sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--muted);font-size:13px;cursor:pointer;transition:.15s;text-decoration:none}
+.btn:hover{color:var(--text);border-color:#374768;transform:translateY(-1px)}
+.btn.primary{background:var(--accent);border-color:transparent;color:#051021;font-weight:700}
+.btn.primary:hover{filter:brightness(1.1)}
+.btn svg{width:15px;height:15px}
+.stats{display:flex;gap:14px;color:var(--muted);font-size:12px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;margin:2px 0 16px;flex-wrap:wrap}
+.stats b{color:var(--text)}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.input,select{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;outline:none}
+.input:focus,select:focus{border-color:var(--accent)}
+.search{min-width:200px}
 .board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;align-items:start}
-@media (max-width:900px){.board{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:560px){.board{grid-template-columns:1fr}}
-.col{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
-.col h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:2px 0 12px;display:flex;justify-content:space-between}
-.col h2 .count{color:var(--text);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:0 8px;font-size:12px}
+@media (max-width:1100px){.board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:600px){.board{grid-template-columns:1fr}}
+.col{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;min-height:120px}
+.col h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:2px 0 12px;display:flex;justify-content:space-between;align-items:center}
+.col h2 .count{color:var(--text);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:0 10px;font-size:12px}
 .col.done h2 .count{color:var(--low)}
-.card{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--muted);border-radius:9px;padding:11px 12px;margin-bottom:10px}
+.col.drop{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.card{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--muted);border-radius:9px;padding:11px 12px;margin-bottom:10px;cursor:grab;animation:pop .25s ease}
+@keyframes pop{from{opacity:0;transform:translateY(6px) scale(.97)}}
+.card.dragging{opacity:.4;cursor:grabbing}
 .card:last-child{margin-bottom:0}
 .card.low{border-left-color:var(--low)}
 .card.medium{border-left-color:var(--medium)}
 .card.high{border-left-color:var(--high)}
 .card.critical{border-left-color:var(--critical)}
+.card.done-card{opacity:.55}
 .card .top{display:flex;gap:8px;align-items:baseline;justify-content:space-between}
-.card .id{color:var(--muted);font:12px ui-monospace,SFMono-Regular,Consolas,monospace}
-.card .title{font-weight:600;font-size:14px;margin:2px 0 4px;word-break:break-word}
+.card .id{color:var(--muted);font:11px ui-monospace,SFMono-Regular,Consolas,monospace}
+.card .title{font-weight:600;font-size:14px;margin:2px 0 4px;word-break:break-word;display:flex;gap:7px;align-items:baseline}
+.card.done-card .title{text-decoration:line-through;text-decoration-color:var(--muted)}
 .card .desc{color:var(--muted);font-size:13px;margin:0 0 8px;word-break:break-word}
-.meta{display:flex;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--muted)}
+.check{accent-color:var(--low);cursor:pointer;transform:translateY(1px)}
+.meta{display:flex;flex-wrap:wrap;gap:6px;font-size:11.5px;color:var(--muted)}
 .pill{border:1px solid var(--line);border-radius:999px;padding:0 7px;font-size:11px}
 .pill.project{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
 .pill.tag{color:var(--muted)}
 .pill.due{color:var(--medium)}
 .pill.overdue{color:var(--critical);border-color:color-mix(in srgb,var(--critical) 45%,var(--line));font-weight:600}
 .pill.completed{color:var(--low)}
-.empty{color:var(--muted);font-size:13px;padding:6px 2px}
-footer{color:var(--muted);font-size:12px;margin-top:26px}
+.pill.prio-critical{color:var(--critical)}
+.pill.prio-high{color:var(--high)}
+.pill.prio-medium{color:var(--medium)}
+.pill.prio-low{color:var(--low)}
+.icon-btn{background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 4px;border-radius:6px}
+.icon-btn:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.empty{color:var(--muted);font-size:13px;padding:10px 2px;text-align:center}
+.footer{color:var(--muted);font-size:11.5px;margin-top:18px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.modal-backdrop{position:fixed;inset:0;background:rgba(3,6,15,.7);display:grid;place-items:center;z-index:40;animation:fade .2s ease}
+@keyframes fade{from{opacity:0}}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;width:min(480px,92vw);box-shadow:0 30px 70px rgba(0,0,0,.6)}
+.modal h3{margin:0 0 12px;font-size:16px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-grid .full{grid-column:1/-1}
+label{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);padding:9px 18px;border:1px solid var(--line);border-radius:10px;background:rgba(11,16,32,.96);font-size:13px;z-index:50;box-shadow:0 14px 34px rgba(0,0,0,.5)}
+.toast[hidden]{display:none}
 </style>
 </head>
 <body>
 <main>
-<h1>Task board</h1>
-<div class="sub">Generated 2026-11-03 10:05 IST &middot; 12 tasks across 8 projects &middot; v1.1.0</div>
-<div class="board">
-<section class="col todo">
-<h2>Todo <span class="count">5</span></h2>
-<article class="card high">
-<div class="top"><span class="id">#3</span></div>
-<div class="title">Profile README: add project demos</div>
-<p class="desc">Link each project to its Pages build</p>
-<div class="meta">
-<span class="pill high">high</span>
-<span class="pill project">portfolio</span>
-<span class="pill due">due Nov 07, 2026</span>
+  <div class="top">
+    <div>
+      <h1><code>go-task-cli</code> — live board</h1>
+      <div class="sub">Working demo · drag cards between columns · <b>localStorage</b> · seed data: 12 tasks across 8 projects</div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="soundBtn" title="Toggle sound">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>
+        Sound
+      </button>
+      <button class="btn" id="resetBtn" title="Restore the demo seed data">Reset demo</button>
+      <a class="btn" href="https://github.com/Ankitavasudev/go-task-cli" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.7 5.5.7 11.7c0 5 3.2 9.2 7.6 10.8.6.1.8-.2.8-.6v-2c-3.1.7-3.8-1.5-3.8-1.5-.5-1.3-1.2-1.6-1.2-1.6-1-.7.1-.7.1-.7 1.1.1 1.7 1.1 1.7 1.1 1 1.7 2.6 1.2 3.3.9.1-.7.4-1.2.7-1.5-2.5-.3-5.1-1.2-5.1-5.6 0-1.2.4-2.2 1.1-3-.1-.3-.5-1.4.1-2.9 0 0 .9-.3 3 1.1a10.5 10.5 0 0 1 5.5 0c2-1.4 3-1.1 3-1.1.6 1.5.2 2.6.1 2.9.7.8 1.1 1.8 1.1 3 0 4.4-2.6 5.3-5.1 5.6.4.3.8 1 .8 2v3c0 .4.2.7.8.6 4.4-1.6 7.6-5.8 7.6-10.8C23.3 5.5 18.3.5 12 .5z"/></svg>
+        GitHub
+      </a>
+      <button class="btn primary" id="addBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Add task
+      </button>
+    </div>
+  </div>
 
-<span class="pill tag">#docs</span>
-</div>
-</article><article class="card medium">
-<div class="top"><span class="id">#7</span></div>
-<div class="title">Renew the domain</div>
-<p class="desc">ankitasalaria.dev expires at the end of the month</p>
-<div class="meta">
-<span class="pill medium">medium</span>
-<span class="pill project">personal</span>
-<span class="pill overdue">overdue Oct 30, 2026</span>
+  <div class="stats" id="stats"></div>
 
-<span class="pill tag">#admin</span>
-</div>
-</article><article class="card medium">
-<div class="top"><span class="id">#8</span></div>
-<div class="title">Write post on the pod analyzer</div>
-<p class="desc">Walk through the HTML report and why escaping matters</p>
-<div class="meta">
-<span class="pill medium">medium</span>
-<span class="pill project">writing</span>
-<span class="pill due">due Nov 12, 2026</span>
+  <div class="bar">
+    <input id="search" class="input search" placeholder="Search tasks…" aria-label="Search tasks">
+    <select id="projectFilter" class="input" aria-label="Filter by project"><option value="">All projects</option></select>
+    <select id="prioFilter" class="input" aria-label="Filter by priority">
+      <option value="">All priorities</option><option>critical</option><option>high</option><option>medium</option><option>low</option>
+    </select>
+    <select id="sortBy" class="input" aria-label="Sort">
+      <option value="created">Sort: newest</option><option value="priority">Sort: priority</option><option value="due">Sort: due date</option>
+    </select>
+  </div>
 
-<span class="pill tag">#blog</span>
-</div>
-</article><article class="card low">
-<div class="top"><span class="id">#6</span></div>
-<div class="title">Read the QueueingHint docs</div>
-<p class="desc">Understand how the scheduler plugin signals a retry</p>
-<div class="meta">
-<span class="pill low">low</span>
-<span class="pill project">learning</span>
+  <div class="board" id="board"></div>
 
-
-<span class="pill tag">#reading</span>
-</div>
-</article><article class="card low">
-<div class="top"><span class="id">#9</span></div>
-<div class="title">Upgrade the Go toolchain</div>
-<p class="desc">Bump the CI matrix once 1.24 is out</p>
-<div class="meta">
-<span class="pill low">low</span>
-<span class="pill project">go-task-cli</span>
-
-
-<span class="pill tag">#ci</span>
-</div>
-</article>
-</section><section class="col progress">
-<h2>In progress <span class="count">2</span></h2>
-<article class="card high">
-<div class="top"><span class="id">#1</span></div>
-<div class="title">Cut v1.1.0 release notes</div>
-<p class="desc">Summarise the board command and the CSV fixes</p>
-<div class="meta">
-<span class="pill high">high</span>
-<span class="pill project">go-task-cli</span>
-<span class="pill due">due Nov 05, 2026</span>
-
-<span class="pill tag">#release</span><span class="pill tag">#docs</span>
-</div>
-</article><article class="card high">
-<div class="top"><span class="id">#5</span></div>
-<div class="title">Review Jaeger CSP pull request</div>
-<p class="desc">Check the base-uri directive against the UI routes</p>
-<div class="meta">
-<span class="pill high">high</span>
-<span class="pill project">jaeger</span>
-<span class="pill due">due Nov 06, 2026</span>
-
-<span class="pill tag">#review</span><span class="pill tag">#upstream</span>
-</div>
-</article>
-</section><section class="col blocked">
-<h2>Blocked <span class="count">2</span></h2>
-<article class="card critical">
-<div class="top"><span class="id">#4</span></div>
-<div class="title">Fix flaky allocator test</div>
-<p class="desc">Waiting on a maintainer reply about the fake cache</p>
-<div class="meta">
-<span class="pill critical">critical</span>
-<span class="pill project">volcano</span>
-<span class="pill due">due Nov 04, 2026</span>
-
-<span class="pill tag">#testing</span><span class="pill tag">#upstream</span>
-</div>
-</article><article class="card critical">
-<div class="top"><span class="id">#12</span></div>
-<div class="title">Prepare CNCF talk outline</div>
-<p class="desc">Waiting for the CFP result before writing slides</p>
-<div class="meta">
-<span class="pill critical">critical</span>
-<span class="pill project">writing</span>
-<span class="pill due">due Nov 15, 2026</span>
-
-<span class="pill tag">#talk</span><span class="pill tag">#cncf</span>
-</div>
-</article>
-</section><section class="col done">
-<h2>Done <span class="count">3</span></h2>
-<article class="card medium">
-<div class="top"><span class="id">#2</span></div>
-<div class="title">Add CSV import validation</div>
-<p class="desc">Reject rows with an empty title instead of dropping them</p>
-<div class="meta">
-<span class="pill medium">medium</span>
-<span class="pill project">go-task-cli</span>
-
-<span class="pill completed">done Oct 28, 2026</span>
-<span class="pill tag">#csv</span>
-</div>
-</article><article class="card medium">
-<div class="top"><span class="id">#10</span></div>
-<div class="title">Triage kubeedge issues</div>
-<p class="desc">Closed two stale reports with reproduction notes</p>
-<div class="meta">
-<span class="pill medium">medium</span>
-<span class="pill project">kubeedge</span>
-
-<span class="pill completed">done Nov 01, 2026</span>
-<span class="pill tag">#triage</span>
-</div>
-</article><article class="card low">
-<div class="top"><span class="id">#11</span></div>
-<div class="title">Back up dotfiles</div>
-
-<div class="meta">
-<span class="pill low">low</span>
-<span class="pill project">personal</span>
-
-<span class="pill completed">done Oct 25, 2026</span>
-<span class="pill tag">#admin</span>
-</div>
-</article>
-</section>
-</div>
-<footer>Generated by go-task-cli v1.1.0. The board is read-only; run the CLI to change a task.</footer>
+  <div class="footer">
+    <span>Backed by <code>localStorage</code> · mirrors <code>go-task-cli</code> v1.1.0 data model · <a href="https://github.com/Ankitavasudev/go-task-cli" style="color:var(--accent)">source</a></span>
+    <span><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>N</kbd> add task</span>
+  </div>
 </main>
+
+<div id="modal" class="modal-backdrop" hidden>
+  <form class="modal" id="taskForm">
+    <h3>New task</h3>
+    <div class="form-grid">
+      <label class="full">Title <input class="input" id="fTitle" required placeholder="What needs doing?"></label>
+      <label class="full">Notes <input class="input" id="fDesc" placeholder="Details (optional)"></label>
+      <label>Priority
+        <select class="input" id="fPrio"><option>high</option><option>critical</option><option selected>medium</option><option>low</option></select>
+      </label>
+      <label>Project <input class="input" id="fProject" placeholder="e.g. go-task-cli"></label>
+      <label>Due date <input class="input" id="fDue" type="date"></label>
+      <label>Tag <input class="input" id="fTag" placeholder="e.g. docs"></label>
+      <div class="full" style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+        <button type="button" class="btn" id="cancelBtn">Cancel</button>
+        <button type="submit" class="btn primary">Add task</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ================= sound ================= */
+const Sound = (() => {
+  let ctx = null, muted = localStorage.getItem('gt-sound') === '0';
+  const ensure = () => {
+    if (!ctx) try { ctx = new (window.AudioContext||window.webkitAudioContext)(); } catch { ctx = null; }
+    if (ctx && ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  };
+  const tone = (freq, dur, type='sine', gain=0.07, slide=0) => {
+    if (muted) return; const c = ensure(); if (!c) return;
+    const now = c.currentTime, o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, now);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq+slide), now+dur);
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(gain, now+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, now+dur);
+    o.connect(g).connect(c.destination); o.start(now); o.stop(now+dur+0.02);
+  };
+  return {
+    add:    () => { tone(523,.07,'sine',.08); setTimeout(()=>tone(784,.09,'sine',.08),70); },
+    done:   () => { tone(659,.08,'sine',.09); setTimeout(()=>tone(880,.12,'sine',.09),80); },
+    undo:   () => tone(440,.08,'sine',.07),
+    del:    () => tone(300,.16,'sawtooth',.06,-160),
+    move:   () => tone(700,.04,'triangle',.05),
+    reset:  () => tone(440,.14,'sawtooth',.06,-200),
+    toggleMute: () => { muted = !muted; localStorage.setItem('gt-sound', muted ? '0' : '1'); if (!muted) tone(880,.06,'sine',.08); return muted; },
+    isMuted: () => muted,
+  };
+})();
+
+/* ================= data ================= */
+const COLUMNS = [
+  { id: 'todo',     label: 'Todo' },
+  { id: 'progress', label: 'In progress' },
+  { id: 'blocked',  label: 'Blocked' },
+  { id: 'done',     label: 'Done' },
+];
+const SEED = [
+  { id: 3,  title: 'Profile README: add project demos', desc: 'Link each project to its Pages build', priority: 'high',   project: 'portfolio',   status: 'todo',     created: Date.now()-86400000*14, due: '2026-11-07', tags: ['docs'] },
+  { id: 7,  title: 'Renew the domain',                  desc: 'ankitasalaria.dev expires at the end of the month', priority: 'medium', project: 'personal', status: 'todo', created: Date.now()-86400000*12, due: '2026-10-30', tags: ['admin'] },
+  { id: 8,  title: 'Write post on the pod analyzer',    desc: 'Walk through the HTML report and why escaping matters', priority: 'medium', project: 'writing', status: 'todo', created: Date.now()-86400000*10, due: '2026-11-12', tags: ['blog'] },
+  { id: 6,  title: 'Read the QueueingHint docs',        desc: 'Understand how the scheduler plugin signals a retry', priority: 'low', project: 'learning', status: 'todo', created: Date.now()-86400000*8, due: null, tags: ['reading'] },
+  { id: 9,  title: 'Upgrade the Go toolchain',          desc: 'Bump the CI matrix once 1.24 is out', priority: 'low', project: 'go-task-cli', status: 'todo', created: Date.now()-86400000*6, due: null, tags: ['ci'] },
+  { id: 1,  title: 'Cut v1.1.0 release notes',          desc: 'Summarise the board command and the CSV fixes', priority: 'high', project: 'go-task-cli', status: 'progress', created: Date.now()-86400000*20, due: '2026-11-05', tags: ['release','docs'] },
+  { id: 5,  title: 'Review Jaeger CSP pull request',    desc: 'Check the base-uri directive against the UI routes', priority: 'high', project: 'jaeger', status: 'progress', created: Date.now()-86400000*9, due: '2026-11-06', tags: ['review','upstream'] },
+  { id: 4,  title: 'Fix flaky allocator test',          desc: 'Waiting on a maintainer reply about the fake cache', priority: 'critical', project: 'volcano', status: 'blocked', created: Date.now()-86400000*18, due: '2026-11-04', tags: ['testing','upstream'] },
+  { id: 12, title: 'Prepare CNCF talk outline',         desc: 'Waiting for the CFP result before writing slides', priority: 'critical', project: 'writing', status: 'blocked', created: Date.now()-86400000*4, due: '2026-11-15', tags: ['talk','cncf'] },
+  { id: 2,  title: 'Add CSV import validation',         desc: 'Reject rows with an empty title instead of dropping them', priority: 'medium', project: 'go-task-cli', status: 'done', created: Date.now()-86400000*25, due: null, completed: '2026-10-28', tags: ['csv'] },
+  { id: 10, title: 'Triage kubeedge issues',            desc: 'Closed two stale reports with reproduction notes', priority: 'medium', project: 'kubeedge', status: 'done', created: Date.now()-86400000*16, due: null, completed: '2026-11-01', tags: ['triage'] },
+  { id: 11, title: 'Back up dotfiles',                  desc: '', priority: 'low', project: 'personal', status: 'done', created: Date.now()-86400000*22, due: null, completed: '2026-10-25', tags: ['admin'] },
+];
+const KEY = 'go-task-cli.demo.v1';
+const load = () => {
+  try { const raw = localStorage.getItem(KEY); return raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(SEED)); }
+  catch { return JSON.parse(JSON.stringify(SEED)); }
+};
+const save = list => localStorage.setItem(KEY, JSON.stringify(list));
+let tasks = load();
+
+/* ================= helpers ================= */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const prioRank = { critical: 0, high: 1, medium: 2, low: 3 };
+const fmtDate = iso => { const d = new Date(iso + 'T00:00:00'); return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); };
+const isOverdue = t => t.due && t.status !== 'done' && new Date(t.due + 'T23:59:59') < new Date();
+const filtered = () => {
+  const q = $('search').value.trim().toLowerCase();
+  const proj = $('projectFilter').value;
+  const prio = $('prioFilter').value;
+  const sort = $('sortBy').value;
+  let list = tasks.filter(t => {
+    if (proj && t.project !== proj) return false;
+    if (prio && t.priority !== prio) return false;
+    if (q) {
+      const hay = [t.title, t.desc, t.project, ...(t.tags||[])].join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  list.sort((a, b) => {
+    if (sort === 'priority') return prioRank[a.priority] - prioRank[b.priority];
+    if (sort === 'due') return (a.due || '9999') < (b.due || '9999') ? -1 : 1;
+    return (b.created || 0) - (a.created || 0);
+  });
+  return list;
+};
+
+/* ================= render ================= */
+function populateProjects() {
+  const projects = [...new Set(tasks.map(t => t.project))].sort();
+  const current = $('projectFilter').value;
+  $('projectFilter').innerHTML = '<option value="">All projects</option>' +
+    projects.map(p => `<option ${p === current ? 'selected' : ''} value="${esc(p)}">${esc(p)}</option>`).join('');
+}
+function renderStats() {
+  const total = tasks.length;
+  const done = tasks.filter(t => t.status === 'done').length;
+  const overdue = tasks.filter(isOverdue).length;
+  const byPrio = tasks.filter(t => t.priority === 'critical' || t.priority === 'high').length;
+  $('stats').innerHTML = `<span><b>${total}</b> tasks</span> · <span><b>${done}</b> done</span> · <span style="color:${overdue ? 'var(--critical)' : 'inherit'}"><b>${overdue}</b> overdue</span> · <span><b>${byPrio}</b> high/critical</span>`;
+}
+function render() {
+  populateProjects();
+  renderStats();
+  const list = filtered();
+  $('board').innerHTML = COLUMNS.map(col => {
+    const items = list.filter(t => t.status === col.id);
+    return `<section class="col ${col.id}" data-col="${col.id}">
+      <h2>${esc(col.label)} <span class="count">${items.length}</span></h2>
+      ${items.map(cardHTML).join('') || '<div class="empty">Empty</div>'}
+    </section>`;
+  }).join('');
+  wireCards();
+  wireDnD();
+}
+function cardHTML(t) {
+  const duePill = t.due
+    ? `<span class="pill ${isOverdue(t) ? 'overdue' : 'due'}">${isOverdue(t) ? 'overdue' : 'due'} ${fmtDate(t.due)}</span>`
+    : '';
+  const donePill = t.status === 'done' && t.completed
+    ? `<span class="pill completed">done ${fmtDate(t.completed)}</span>` : '';
+  return `<article class="card ${esc(t.priority)} ${t.status === 'done' ? 'done-card' : ''}" draggable="true" data-id="${t.id}">
+    <div class="top">
+      <span class="id">#${t.id}</span>
+      <span style="display:flex;gap:6px;align-items:center">
+        <input class="check" type="checkbox" data-id="${t.id}" ${t.status === 'done' ? 'checked' : ''} aria-label="Toggle complete">
+        <button class="icon-btn" data-del="${t.id}" title="Delete">✕</button>
+      </span>
+    </div>
+    <div class="title">${esc(t.title)}</div>
+    ${t.desc ? `<p class="desc">${esc(t.desc)}</p>` : ''}
+    <div class="meta">
+      <span class="pill prio-${esc(t.priority)}">${esc(t.priority)}</span>
+      <span class="pill project">${esc(t.project)}</span>
+      ${duePill}${donePill}
+      ${(t.tags||[]).map(tag => `<span class="pill tag">#${esc(tag)}</span>`).join('')}
+    </div>
+  </article>`;
+}
+function wireCards() {
+  document.querySelectorAll('.check').forEach(cb => cb.addEventListener('change', e => {
+    const id = +e.target.dataset.id;
+    const t = tasks.find(x => x.id === id); if (!t) return;
+    t.status = t.status === 'done' ? 'todo' : 'done';
+    t.completed = t.status === 'done' ? new Date().toISOString().slice(0,10) : null;
+    save(tasks);
+    t.status === 'done' ? Sound.done() : Sound.undo();
+    render();
+  }));
+  document.querySelectorAll('[data-del]').forEach(btn => btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const id = +e.currentTarget.dataset.del;
+    tasks = tasks.filter(t => t.id !== id);
+    save(tasks); Sound.del(); render(); toast('Task deleted');
+  }));
+}
+function wireDnD() {
+  let draggedId = null;
+  document.querySelectorAll('.card[draggable]').forEach(card => {
+    card.addEventListener('dragstart', e => {
+      draggedId = +card.dataset.id;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(draggedId));
+    });
+    card.addEventListener('dragend', () => card.classList.remove('dragging'));
+  });
+  document.querySelectorAll('.col').forEach(col => {
+    col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('drop'); });
+    col.addEventListener('dragleave', () => col.classList.remove('drop'));
+    col.addEventListener('drop', e => {
+      e.preventDefault(); col.classList.remove('drop');
+      const id = draggedId ?? +e.dataTransfer.getData('text/plain');
+      const t = tasks.find(x => x.id === id); if (!t) return;
+      t.status = col.dataset.col;
+      if (t.status === 'done' && !t.completed) t.completed = new Date().toISOString().slice(0,10);
+      if (t.status !== 'done') t.completed = null;
+      save(tasks); Sound.move(); render();
+    });
+  });
+}
+function toast(msg) { const el = $('toast'); el.textContent = msg; el.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => el.hidden = true, 2000); }
+
+/* ================= modal ================= */
+const modal = $('modal');
+const openModal = () => { modal.hidden = false; $('fTitle').focus(); };
+const closeModal = () => { modal.hidden = true; $('taskForm').reset(); };
+$('addBtn').addEventListener('click', openModal);
+$('cancelBtn').addEventListener('click', closeModal);
+modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+$('taskForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const title = $('fTitle').value.trim(); if (!title) return;
+  const maxId = tasks.reduce((m, t) => Math.max(m, t.id), 0);
+  tasks.unshift({
+    id: maxId + 1,
+    title,
+    desc: $('fDesc').value.trim(),
+    priority: $('fPrio').value,
+    project: $('fProject').value.trim() || 'general',
+    status: 'todo',
+    created: Date.now(),
+    due: $('fDue').value || null,
+    tags: $('fTag').value.split(',').map(s => s.trim()).filter(Boolean),
+  });
+  save(tasks); Sound.add(); closeModal(); render(); toast('Task added');
+});
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') { e.preventDefault(); openModal(); }
+  if (e.key === 'Escape' && !modal.hidden) closeModal();
+});
+$('soundBtn').addEventListener('click', () => {
+  const m = Sound.toggleMute();
+  toast(m ? 'Sound off' : 'Sound on');
+});
+$('resetBtn').addEventListener('click', () => {
+  tasks = JSON.parse(JSON.stringify(SEED)); save(tasks); Sound.reset(); render(); toast('Demo seed restored');
+});
+$('search').addEventListener('input', render);
+$('projectFilter').addEventListener('change', render);
+$('prioFilter').addEventListener('change', render);
+$('sortBy').addEventListener('change', render);
+render();
+</script>
 </body>
 </html>
