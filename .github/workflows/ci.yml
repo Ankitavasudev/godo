@@ -31,24 +31,24 @@ jobs:
         run: go test -race ./...
 
       - name: Build
-        run: go build -o go-task-cli .
+        run: go build -o godo .
 
       - name: End-to-end smoke test
         run: |
           export GO_TASK_CLI_FILE="$PWD/tasks.json"
-          ./go-task-cli add "Ship it" --project work --priority high --due 2026-12-01
-          ./go-task-cli add "Buy milk"
-          ./go-task-cli list --project work
-          ./go-task-cli done 1
-          ./go-task-cli csv-export out.csv
-          ./go-task-cli csv-import out.csv
-          ./go-task-cli stats
-          ./go-task-cli version
+          ./godo add "Ship it" --project work --priority high --due 2026-12-01
+          ./godo add "Buy milk"
+          ./godo list --project work
+          ./godo done 1
+          ./godo csv-export out.csv
+          ./godo csv-import out.csv
+          ./godo stats
+          ./godo version
 
       - name: Check the HTML board
         run: |
           export GO_TASK_CLI_FILE="$PWD/examples/tasks.json"
-          ./go-task-cli board > board.html
+          ./godo board > board.html
           grep -q '<!DOCTYPE html>' board.html
           grep -q 'Cut v1.1.0 release notes' board.html
           grep -q '12 tasks across 8 projects' board.html

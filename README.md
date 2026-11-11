@@ -1,37 +1,37 @@
-# go-task-cli
+# godo
 
 A project-aware todo list that lives in one JSON file. Cobra on the command
 line, no database, no server, no account. It can also print the store as a
 read-only HTML kanban board you can publish or paste into a review.
 
 ```bash
-go-task-cli add "Write the report" --project work --priority high --due 2026-12-01 --tag docs --tag urgent
-go-task-cli list
-go-task-cli done 1
-go-task-cli board > board.html
+godo add "Write the report" --project work --priority high --due 2026-12-01 --tag docs --tag urgent
+godo list
+godo done 1
+godo board > board.html
 ```
 
-[See a generated board](https://ankitavasudev.github.io/go-task-cli/), built
+[See a generated board](https://ankitavasudev.github.io/godo/), built
 from [`examples/tasks.json`](examples/tasks.json).
 
-The store is `~/.go-task-cli.json`; set `GO_TASK_CLI_FILE` to point somewhere
+The store is `~/.godo.json`; set `GO_TASK_CLI_FILE` to point somewhere
 else (the tests rely on that to stay out of your home directory).
 
 ## Install
 
 ```bash
-go install github.com/Ankitavasudev/go-task-cli@v1.1.1
+go install github.com/Ankitavasudev/godo@v1.2.0
 ```
 
 Prefer a prebuilt binary? Every tag ships Linux, macOS and Windows builds
-(amd64 + arm64) on the [releases page](https://github.com/Ankitavasudev/go-task-cli/releases),
+(amd64 + arm64) on the [releases page](https://github.com/Ankitavasudev/godo/releases),
 built with [GoReleaser](https://goreleaser.com).
 
 Go 1.21 or newer. `go install` names the binary after the module, so the command
-is `go-task-cli`. From a clone, `go build -o go-task-cli .` produces the same
+is `godo`. From a clone, `go build -o godo .` produces the same
 binary.
 
-`go-task-cli version` prints the version it was built from: the module version
+`godo version` prints the version it was built from: the module version
 when installed with `go install`, or the value compiled into the source when
 built from a checkout.
 
@@ -64,8 +64,8 @@ Priorities are `low`, `medium`, `high`, `critical`; statuses are `todo`,
 stdout:
 
 ```bash
-go-task-cli board > board.html
-GO_TASK_CLI_FILE=examples/tasks.json go-task-cli board > demo.html
+godo board > board.html
+GO_TASK_CLI_FILE=examples/tasks.json godo board > demo.html
 ```
 
 The page has inline CSS, no JavaScript and no external requests, so it opens

@@ -14,8 +14,8 @@ Thank you for your interest in contributing!
 
 `ash
 # Clone the repo
-git clone https://github.com/your-username/go-task-cli.git
-cd go-task-cli
+git clone https://github.com/your-username/godo.git
+cd godo
 
 # Run tests
 go test -v ./...

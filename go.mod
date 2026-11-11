@@ -1,4 +1,4 @@
-module github.com/Ankitavasudev/go-task-cli
+module github.com/Ankitavasudev/godo
 
 go 1.21
 

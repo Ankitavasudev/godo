@@ -57,9 +57,9 @@ func getStorePath() string {
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return ".go-task-cli.json"
+		return ".godo.json"
 	}
-	return filepath.Join(home, ".go-task-cli.json")
+	return filepath.Join(home, ".godo.json")
 }
 
 func loadStore() TaskStore {
@@ -287,7 +287,7 @@ func printStore(store TaskStore) {
 
 func newRootCmd() *cobra.Command {
 	var rootCmd = &cobra.Command{
-		Use:   "go-task-cli",
+		Use:   "godo",
 		Short: "A fast, project-aware task manager for developers",
 	}
 

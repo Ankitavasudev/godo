@@ -4,7 +4,7 @@
       "id": 1,
       "title": "Cut v1.1.0 release notes",
       "description": "Summarise the board command and the CSV fixes",
-      "project": "go-task-cli",
+      "project": "godo",
       "priority": "high",
       "status": "in_progress",
       "tags": ["release", "docs"],
@@ -16,7 +16,7 @@
       "id": 2,
       "title": "Add CSV import validation",
       "description": "Reject rows with an empty title instead of dropping them",
-      "project": "go-task-cli",
+      "project": "godo",
       "priority": "medium",
       "status": "done",
       "tags": ["csv"],
@@ -99,7 +99,7 @@
       "id": 9,
       "title": "Upgrade the Go toolchain",
       "description": "Bump the CI matrix once 1.24 is out",
-      "project": "go-task-cli",
+      "project": "godo",
       "priority": "low",
       "status": "todo",
       "tags": ["ci"],
@@ -143,5 +143,5 @@
     }
   ],
   "next_id": 13,
-  "projects": ["go-task-cli", "jaeger", "kubeedge", "learning", "personal", "portfolio", "volcano", "writing"]
+  "projects": ["godo", "jaeger", "kubeedge", "learning", "personal", "portfolio", "volcano", "writing"]
 }

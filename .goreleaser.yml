@@ -1,6 +1,6 @@
 version: 2
 
-project_name: go-task-cli
+project_name: godo
 
 before:
   hooks:
@@ -17,7 +17,7 @@ builds:
       - amd64
       - arm64
     main: .
-    binary: go-task-cli
+    binary: godo
     ldflags:
       - -s -w -X main.version=v{{ .Version }}
 
