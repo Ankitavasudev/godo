@@ -20,8 +20,12 @@ else (the tests rely on that to stay out of your home directory).
 ## Install
 
 ```bash
-go install github.com/Ankitavasudev/go-task-cli@v1.1.0
+go install github.com/Ankitavasudev/go-task-cli@v1.1.1
 ```
+
+Prefer a prebuilt binary? Every tag ships Linux, macOS and Windows builds
+(amd64 + arm64) on the [releases page](https://github.com/Ankitavasudev/go-task-cli/releases),
+built with [GoReleaser](https://goreleaser.com).
 
 Go 1.21 or newer. `go install` names the binary after the module, so the command
 is `go-task-cli`. From a clone, `go build -o go-task-cli .` produces the same

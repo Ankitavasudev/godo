@@ -14,7 +14,7 @@ import (
 // version is used when the binary is built from a checkout. When it is
 // installed from a module version, versionString reports that instead, so the
 // number in the board matches what was downloaded.
-var version = "v1.1.0"
+var version = "v1.1.1"
 
 func versionString() string {
 	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
